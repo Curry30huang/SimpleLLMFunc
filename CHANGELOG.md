@@ -108,8 +108,8 @@
 
 ### 🔮 Future Plans
 
-- **v0.6.0**: `enable_event=True` will become the default
-- **v0.7.0**: Remove `enable_event` parameter, always enable event stream
+- **v0.5.1**: `enable_event=True` will become the default
+- **v0.5.2**: Remove `enable_event` parameter, always enable event stream
 
 ### Migration Guide
 

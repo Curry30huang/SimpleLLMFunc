@@ -32,9 +32,10 @@ class TestExtractUsageFromResponse:
         )
         result = extract_usage_from_response(response)
         assert result is not None
-        assert result["input"] == 10
-        assert result["output"] == 20
-        assert result["total"] == 30
+        assert isinstance(result, CompletionUsage)
+        assert result.prompt_tokens == 10
+        assert result.completion_tokens == 20
+        assert result.total_tokens == 30
 
     def test_extract_usage_none(self) -> None:
         """Test extracting usage from None."""
@@ -72,5 +73,5 @@ class TestExtractUsageFromResponse:
         # Chunks typically don't have usage, but function should handle gracefully
         result = extract_usage_from_response(chunk)
         # Should return None if no usage field
-        assert result is None or isinstance(result, dict)
+        assert result is None or isinstance(result, CompletionUsage)
 

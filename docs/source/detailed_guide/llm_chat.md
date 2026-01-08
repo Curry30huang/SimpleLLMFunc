@@ -56,14 +56,22 @@ async def your_chat_function(
 - **max_tool_calls** (可选): 最大工具调用次数，防止无限循环，默认为 5
 - **stream** (可选): 是否启用流式模式，默认为 True
 - **return_mode** (可选): 返回模式，可选值为 "text"（默认）或 "raw"
+- **enable_event** (可选): 是否启用事件流，默认为 False
+  - `False`: 返回 `(response, messages)` 元组（向后兼容模式）
+  - `True`: 返回 `ReactOutput`（`ResponseYield` 或 `EventYield`）
+  - 详细说明请参考 [事件流文档](event_stream.md)
 - ****llm_kwargs**: 额外的关键字参数，将直接传递给 LLM 接口（如 temperature、top_p 等）
 
 ### 返回值
 
-`llm_chat` 装饰的函数返回一个异步生成器，每次迭代返回：
+当 `enable_event=False`（默认）时，`llm_chat` 装饰的函数返回一个异步生成器，每次迭代返回：
 
 - `chunk` (str): 响应内容的一部分（流式模式）或完整响应（非流式）
 - `updated_history` (List[Dict[str, str]]): 更新后的对话历史
+
+当 `enable_event=True` 时，返回 `ReactOutput`，可以是：
+- `ResponseYield`: 包含响应和消息列表
+- `EventYield`: 包含 ReAct 循环中的事件（如工具调用开始/结束、LLM 调用等）
 
 ## 使用示例
 
@@ -377,6 +385,37 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("SimpleLLMFunc")
 logger.setLevel(logging.DEBUG)
 ```
+
+### 5. 事件流（Event Stream）
+
+事件流是 SimpleLLMFunc v0.5.0+ 引入的高级特性，允许你实时观察 ReAct 循环的完整执行过程。
+
+通过设置 `enable_event=True`，你可以：
+
+- **实时监控**：观察 LLM 调用、工具调用的实时状态
+- **性能分析**：获取详细的执行统计和性能指标
+- **自定义 UI**：基于事件构建丰富的用户界面
+- **调试支持**：深入了解 ReAct 循环的执行细节
+
+**基本用法**：
+
+```python
+@llm_chat(llm_interface=llm, enable_event=True)
+async def chat(message: str, history=None):
+    """智能助手"""
+    pass
+
+# 处理事件和响应
+from SimpleLLMFunc.hooks import ResponseYield, EventYield
+
+async for output in chat("查询天气"):
+    if isinstance(output, ResponseYield):
+        print(output.response)
+    elif isinstance(output, EventYield):
+        print(f"事件: {output.event.event_type}")
+```
+
+**详细文档**：请参考 [事件流文档](event_stream.md) 了解完整的事件类型、使用示例和最佳实践。
 
 ## 常见问题
 

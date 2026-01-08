@@ -23,7 +23,7 @@ provider_json_path: str = os.path.join(current_dir, "provider.json")
 # 选用与现有示例一致的 key（可按需修改到你可用的 provider/model）
 VolcEngine_deepseek_v3_Interface = OpenAICompatible.load_from_json_file(
     provider_json_path
-)["openrouter"]["google/gemini-3-pro-preview"]
+)["openrouter"]["google/gemini-3-flash-preview"]
 
 
 # ============ 定义一个简单工具 ============

@@ -36,6 +36,112 @@
 
 ## 高级示例
 
+### 事件流观测示例
+
+**文件**: [examples/event_stream_chatbot.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/event_stream_chatbot.py)
+
+**⭐ 全新功能！** 展示如何使用 SimpleLLMFunc v0.5.0+ 的事件流功能构建功能完整的聊天机器人。
+
+**核心特性**：
+- ✨ **实时流式响应**：使用 Rich 库渲染 Markdown 格式的响应
+- 🔧 **工具调用可视化**：实时显示工具调用的参数、执行过程和结果
+- 📊 **完整执行统计**：Token 使用量、执行耗时、调用次数等详细信息
+- 🎯 **事件驱动架构**：在外部函数中处理事件，实现自定义 UI 和逻辑
+
+**关键代码片段**：
+
+```python
+from SimpleLLMFunc import llm_chat
+from SimpleLLMFunc.hooks import (
+    ReactOutput, ResponseYield, EventYield,
+    ReactStartEvent, LLMChunkArriveEvent, ToolCallStartEvent
+)
+
+# 启用事件流
+@llm_chat(
+    llm_interface=llm,
+    toolkit=[calculate, get_weather, search_knowledge],
+    stream=True,
+    enable_event=True,  # 🔑 启用事件流
+)
+async def chat(user_message: str, chat_history: List[Dict[str, str]] = None):
+    """智能助手"""
+    pass
+
+# 在外部处理事件
+async for output in chat(user_message="帮我计算 25 * 4 + 18"):
+    if isinstance(output, EventYield):
+        # 处理事件：LLM 调用、工具调用等
+        event = output.event
+        if isinstance(event, ToolCallStartEvent):
+            print(f"工具调用: {event.tool_name}")
+            print(f"参数: {event.arguments}")
+    
+    elif isinstance(output, ResponseYield):
+        # 处理响应数据
+        print(output.response, end="")
+```
+
+**依赖安装**：
+```bash
+pip install rich
+```
+
+**运行示例**：
+```bash
+python examples/event_stream_chatbot.py
+```
+
+**详细文档**：了解更多事件流的使用方法，请参考 [事件流系统](detailed_guide/event_stream.md)。
+
+### llm_function 事件流与 Token 用量监控
+
+**文件**: [examples/llm_function_token_usage.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/llm_function_token_usage.py)
+
+展示如何在 `@llm_function` 中使用事件流来实时监控 Token 使用情况。适用于需要精确计量 API 调用成本的场景。
+
+**核心特性**：
+- 🔍 **实时 Token 监控**：捕获每次 LLM 调用的 Token 用量
+- 💰 **成本追踪**：记录 Prompt、Completion 和总 Token 数
+- 📊 **统计汇总**：自动累计总用量
+- ⚡ **零工具调用**：简单的单次 LLM 调用示例
+
+**关键代码片段**：
+
+```python
+from SimpleLLMFunc import llm_function
+from SimpleLLMFunc.hooks.events import LLMCallEndEvent
+from SimpleLLMFunc.hooks.stream import is_response_yield
+
+@llm_function(
+    llm_interface=llm,
+    enable_event=True,  # 🔑 启用事件流
+)
+async def summarize_text(text: str) -> str:
+    """将给定的文本进行简洁的摘要"""
+    return ""
+
+# 捕获 Token 用量
+async for output in summarize_text(text="..."):
+    if is_response_yield(output):
+        # 处理响应结果
+        print(output.response)
+    else:
+        event = output.event
+        if isinstance(event, LLMCallEndEvent):
+            # 获取 Token 用量
+            usage = event.usage
+            if usage:
+                print(f"Prompt Tokens: {usage.prompt_tokens}")
+                print(f"Completion Tokens: {usage.completion_tokens}")
+                print(f"Total Tokens: {usage.total_tokens}")
+```
+
+**运行示例**：
+```bash
+poetry run python examples/llm_function_token_usage.py
+```
+
 ### llm_chat 聊天应用
 
 **文件**: [examples/llm_chat_example.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/llm_chat_example.py)
@@ -99,6 +205,7 @@
 - **基础聊天**: 见 [llm_chat_example.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/llm_chat_example.py)
 - **带工具的聊天**: 见 [llm_chat_example.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/llm_chat_example.py)
 - **多会话并发**: 见 [llm_chat_example.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/llm_chat_example.py)
+- **事件流观测**: 见 [event_stream_chatbot.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/event_stream_chatbot.py) ⭐ 使用 `enable_event=True` 实时观察 ReAct 循环执行过程
 
 ### 多模态处理
 - **图片分析**: 见 [multi_modality_toolcall.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/multi_modality_toolcall.py)
@@ -128,6 +235,9 @@ python parallel_toolcall_example.py
 
 # 运行多模态示例
 python multi_modality_toolcall.py
+
+# 运行事件流 Chatbot 示例（需要先安装 rich: pip install rich）
+python event_stream_chatbot.py
 ```
 
 ## 完整的 Examples 目录
@@ -157,7 +267,8 @@ python multi_modality_toolcall.py
 ### 高级用户
 1. 阅读 [LLM 接口层文档](detailed_guide/llm_interface.md)
 2. 学习多模态处理：`multi_modality_toolcall.py`
-3. 自定义 LLM 接口和工具系统
+3. 学习事件流处理：`event_stream_chatbot.py` ⭐
+4. 自定义 LLM 接口和工具系统
 
 ## 常见问题
 

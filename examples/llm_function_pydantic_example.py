@@ -18,7 +18,7 @@ provider_json_path = os.path.join(current_dir, "provider.json")
 try:
     llm_interface = OpenAICompatible.load_from_json_file(
         provider_json_path
-    )["openrouter"]["google/gemini-3-pro-preview"]
+    )["openrouter"]["google/gemini-3-flash-preview"]
 except Exception:
     llm_interface = None
 

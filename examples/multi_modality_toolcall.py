@@ -7,7 +7,7 @@ from SimpleLLMFunc.type import ImgPath
 # 当前脚本文件所在的文件夹下的provider.json文件
 current_dir = os.path.dirname(os.path.abspath(__file__))
 provider_json_path = os.path.join(current_dir, "provider.json")
-gpt_4o = OpenAICompatible.load_from_json_file(provider_json_path)["dreamcatcher"]["gpt-4o"]
+gpt_4o = OpenAICompatible.load_from_json_file(provider_json_path)["openrouter"]["google/gemini-3-flash-preview"]
 
 
 @tool(

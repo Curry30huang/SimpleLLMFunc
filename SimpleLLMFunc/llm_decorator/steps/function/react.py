@@ -12,7 +12,7 @@ from SimpleLLMFunc.logger import push_debug, push_error, push_warning
 from SimpleLLMFunc.logger.logger import get_location, get_current_context_attribute
 from SimpleLLMFunc.logger.context_manager import get_current_trace_id
 from SimpleLLMFunc.type import MessageList, ToolDefinitionList
-from SimpleLLMFunc.hooks.stream import ReactOutput, ResponseYield, is_response_yield
+from SimpleLLMFunc.hooks.stream import ReactOutput, ResponseYield, is_response_yield, EventYield, is_event_yield
 
 
 from SimpleLLMFunc.tool import Tool
@@ -39,8 +39,12 @@ async def execute_llm_call(
     trace_id: str = "",
     user_task_prompt: str = "",
     **llm_kwargs: Any,
-) -> AsyncGenerator[Any, None]:
-    """执行 LLM 调用"""
+) -> AsyncGenerator[Union[Any, ReactOutput], None]:
+    """执行 LLM 调用
+    
+    当 enable_event=True 时，yield ReactOutput（包括事件和响应）
+    当 enable_event=False 时，yield response（向后兼容）
+    """
     func_name = get_current_context_attribute("function_name") or "Unknown Function"
     current_trace_id = trace_id or get_current_trace_id() or ""
     
@@ -57,20 +61,39 @@ async def execute_llm_call(
         **llm_kwargs,
     ):
         if enable_event:
-            # 事件模式：只 yield 响应
-            if is_response_yield(output):
-                yield output.response
+            # 事件模式：yield 完整的 ReactOutput（包括事件和响应）
+            # output 此时是 ReactOutput
+            yield output
         else:
-            # 向后兼容模式：直接 yield response
-            response, _ = output
-            yield response
+            # 向后兼容模式：只 yield response
+            # output 此时是 Tuple[Any, MessageList]
+            if isinstance(output, tuple):
+                response, _ = output
+                yield response
+            elif is_response_yield(output):
+                # 如果意外收到 ReactOutput，提取 response
+                yield output.response
 
 
 async def get_final_response(
-    response_stream: AsyncGenerator[Any, None],
+    response_stream: AsyncGenerator[Union[Any, ReactOutput], None],
+    enable_event: bool = False,
 ) -> Any:
-    """从响应流中获取最后一个响应"""
-    return await get_last_item_of_async_generator(response_stream)
+    """从响应流中获取最后一个响应
+    
+    当 enable_event=True 时，从 ReactOutput 中提取最后一个响应
+    当 enable_event=False 时，直接获取最后一个响应值
+    """
+    if enable_event:
+        # 事件模式：收集所有输出，返回最后一个 ResponseYield 的响应
+        last_response = None
+        async for output in response_stream:
+            if is_response_yield(output):
+                last_response = output.response
+        return last_response
+    else:
+        # 向后兼容模式：直接获取最后一个响应值
+        return await get_last_item_of_async_generator(response_stream)
 
 
 def check_response_content_empty(response: Any, func_name: str) -> bool:
@@ -152,58 +175,126 @@ async def execute_react_loop(
     enable_event: bool = False,
     trace_id: str = "",
     user_task_prompt: str = "",
-) -> Any:
-    """执行 ReAct 循环的完整流程（包含重试）"""
+) -> Union[Any, AsyncGenerator[ReactOutput, None]]:
+    """执行 ReAct 循环的完整流程（包含重试）
+    
+    当 enable_event=True 时，返回事件流生成器
+    当 enable_event=False 时，返回最终响应值（向后兼容）
+    """
     # 1. 准备工具
     tool_param, tool_map = prepare_tools_for_execution(toolkit, func_name)
 
-    # 2. 执行 LLM 调用
-    response_stream = execute_llm_call(
-        llm_interface=llm_interface,
-        messages=messages,
-        tools=tool_param,
-        tool_map=tool_map,
-        max_tool_calls=max_tool_calls,
-        stream=False,
-        enable_event=enable_event,
-        trace_id=trace_id,
-        user_task_prompt=user_task_prompt,
-        **llm_kwargs,
-    )
-
-    # 3. 获取最终响应
-    final_response = await get_final_response(response_stream)
-
-    # 4. 检查响应内容是否为空
-    if check_response_content_empty(final_response, func_name):
-        push_warning(
-            f"Async LLM function '{func_name}' returned empty response content, "
-            "will retry automatically.",
-            location=get_location(),
-        )
-
-        # 5. 重试 LLM 调用
-        retry_times = llm_kwargs.get("retry_times", 2)
-        final_response = await retry_llm_call(
+    if enable_event:
+        # 事件模式：返回事件流生成器
+        async def event_stream() -> AsyncGenerator[ReactOutput, None]:
+            # 执行 LLM 调用
+            response_stream = execute_llm_call(
+                llm_interface=llm_interface,
+                messages=messages,
+                tools=tool_param,
+                tool_map=tool_map,
+                max_tool_calls=max_tool_calls,
+                stream=False,
+                enable_event=True,
+                trace_id=trace_id,
+                user_task_prompt=user_task_prompt,
+                **llm_kwargs,
+            )
+            
+            # 收集所有输出和最后一个响应
+            last_response = None
+            async for output in response_stream:
+                yield output
+                if is_response_yield(output):
+                    last_response = output.response
+            
+            # 检查响应内容是否为空
+            if last_response and check_response_content_empty(last_response, func_name):
+                push_warning(
+                    f"Async LLM function '{func_name}' returned empty response content, "
+                    "will retry automatically.",
+                    location=get_location(),
+                )
+                
+                # 重试 LLM 调用
+                retry_times = llm_kwargs.get("retry_times", 2)
+                retry_stream = execute_llm_call(
+                    llm_interface=llm_interface,
+                    messages=messages,
+                    tools=tool_param,
+                    tool_map=tool_map,
+                    max_tool_calls=max_tool_calls,
+                    stream=False,
+                    enable_event=True,
+                    trace_id=trace_id,
+                    user_task_prompt=user_task_prompt,
+                    **llm_kwargs,
+                )
+                
+                # Yield 重试的事件流
+                async for output in retry_stream:
+                    yield output
+                    if is_response_yield(output):
+                        last_response = output.response
+            
+            # 记录最终响应
+            if last_response:
+                push_debug(
+                    f"Async LLM function '{func_name}' received response "
+                    f"{json.dumps(last_response, default=str, ensure_ascii=False, indent=2)}",
+                    location=get_location(),
+                )
+        
+        return event_stream()
+    else:
+        # 向后兼容模式：返回最终响应值
+        # 2. 执行 LLM 调用
+        response_stream = execute_llm_call(
             llm_interface=llm_interface,
             messages=messages,
             tools=tool_param,
             tool_map=tool_map,
             max_tool_calls=max_tool_calls,
-            retry_times=retry_times,
-            func_name=func_name,
-            enable_event=enable_event,
+            stream=False,
+            enable_event=False,
             trace_id=trace_id,
             user_task_prompt=user_task_prompt,
             **llm_kwargs,
         )
 
-    # 6. 记录最终响应
-    push_debug(
-        f"Async LLM function '{func_name}' received response "
-        f"{json.dumps(final_response, default=str, ensure_ascii=False, indent=2)}",
-        location=get_location(),
-    )
+        # 3. 获取最终响应
+        final_response = await get_final_response(response_stream, enable_event=False)
 
-    return final_response
+        # 4. 检查响应内容是否为空
+        if check_response_content_empty(final_response, func_name):
+            push_warning(
+                f"Async LLM function '{func_name}' returned empty response content, "
+                "will retry automatically.",
+                location=get_location(),
+            )
+
+            # 5. 重试 LLM 调用
+            retry_times = llm_kwargs.get("retry_times", 2)
+            final_response = await retry_llm_call(
+                llm_interface=llm_interface,
+                messages=messages,
+                tools=tool_param,
+                tool_map=tool_map,
+                max_tool_calls=max_tool_calls,
+                retry_times=retry_times,
+                func_name=func_name,
+                enable_event=False,
+                trace_id=trace_id,
+                user_task_prompt=user_task_prompt,
+                **llm_kwargs,
+            )
+
+        # 6. 记录最终响应
+        push_debug(
+            f"Async LLM function '{func_name}' received response "
+            f"{json.dumps(final_response, default=str, ensure_ascii=False, indent=2)}",
+            location=get_location(),
+        )
+
+        return final_response
 

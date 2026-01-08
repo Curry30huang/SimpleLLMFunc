@@ -47,6 +47,10 @@ async def your_function(param1: Type1, param2: Type2) -> ReturnType:
 - **max_tool_calls** (可选): 最大工具调用次数，防止无限循环，默认为 5
 - **system_prompt_template** (可选): 自定义系统提示模板
 - **user_prompt_template** (可选): 自定义用户提示模板
+- **enable_event** (可选): 是否启用事件流，默认为 False
+  - `False`: 正常执行，直接返回解析后的结果（向后兼容模式）
+  - `True`: 返回一个异步生成器，yield `ReactOutput`（`ResponseYield` 或 `EventYield`）
+  - 详细说明请参考 [事件流系统文档](event_stream.md)
 - ****llm_kwargs**: 额外的关键字参数，将直接传递给 LLM 接口（如 temperature、top_p 等）
 
 ### 自定义提示模板
@@ -546,9 +550,63 @@ asyncio.run(process_multiple_urls())
 
 这些示例展示了如何使用 `llm_function` 在异步环境中构建高并发的 LLM 调用逻辑。
 
+## 事件流使用
+
+`llm_function` 支持事件流，允许你实时观察函数执行过程中的 LLM 调用、Token 用量等信息。这对于性能监控、成本追踪和调试非常有用。
+
+### 基本用法
+
+```python
+from SimpleLLMFunc import llm_function
+from SimpleLLMFunc.hooks import ResponseYield, EventYield
+from SimpleLLMFunc.hooks.events import LLMCallEndEvent
+
+@llm_function(
+    llm_interface=llm,
+    enable_event=True,  # 🔑 启用事件流
+)
+async def analyze_text(text: str) -> str:
+    """分析文本并提供见解"""
+    pass
+
+# 处理事件和响应
+async for output in analyze_text("Sample text"):
+    if isinstance(output, ResponseYield):
+        # 获取最终结果（已解析为指定的返回类型）
+        print(f"分析结果: {output.response}")
+    elif isinstance(output, EventYield):
+        event = output.event
+        # 处理各种事件
+        if isinstance(event, LLMCallEndEvent):
+            usage = event.usage
+            if usage:
+                print(f"Token 用量: {usage.total_tokens}")
+```
+
+### Token 用量监控示例
+
+参考完整示例：[examples/llm_function_token_usage.py](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/examples/llm_function_token_usage.py)
+
+```python
+total_tokens = 0
+
+async for output in summarize_text(text="长文本..."):
+    if isinstance(output, EventYield):
+        event = output.event
+        if isinstance(event, LLMCallEndEvent) and event.usage:
+            total_tokens += event.usage.total_tokens
+    elif isinstance(output, ResponseYield):
+        print(f"摘要: {output.response}")
+
+print(f"总计使用 Token: {total_tokens}")
+```
+
+**详细文档**：请参考 [事件流系统文档](event_stream.md) 了解完整的事件类型、使用示例和最佳实践。
+
 ## 最佳实践
 
 ### 1. 错误处理
+
 ```python
 async def robust_llm_call():
     try:
@@ -560,6 +618,7 @@ async def robust_llm_call():
 ```
 
 ### 2. 超时控制
+
 ```python
 async def llm_call_with_timeout():
     try:

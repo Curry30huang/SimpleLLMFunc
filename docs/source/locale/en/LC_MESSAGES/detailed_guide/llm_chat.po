@@ -4,19 +4,20 @@
 # package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version:  SimpleLLMFunc\n"
+"Project-Id-Version: SimpleLLMFunc\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-08 01:12+0800\n"
+"POT-Creation-Date: 2026-01-09 06:03+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: en\n"
-"Language-Team: en <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../source/detailed_guide/llm_chat.md:1
@@ -28,18 +29,18 @@ msgid ""
 "本文档介绍 SimpleLLMFunc 库中的聊天装饰器 "
 "`llm_chat`。该装饰器专门用于实现与大语言模型的对话功能，支持多轮对话、历史记录管理和工具调用。"
 msgstr ""
-"This document introduces the chat decorator `llm_chat` in the "
-"SimpleLLMFunc library. This decorator is specifically designed to "
-"implement conversational functions with large language models, supporting"
-" multi-turn conversations, history management, and tool calls."
+"This document introduces the chat decorator `llm_chat` in the SimpleLLMFunc "
+"library. This decorator is specifically designed to implement conversational"
+" functionality with large language models, supporting multi-turn "
+"conversations, history management, and tool invocation."
 
 #: ../../source/detailed_guide/llm_chat.md:5
 msgid "llm_chat 装饰器概述"
-msgstr "llm_chat decorator overview"
+msgstr "Overview of the llm_chat decorator"
 
 #: ../../source/detailed_guide/llm_chat.md:7
 msgid "装饰器作用"
-msgstr "decorator's role"
+msgstr "Decorator's role"
 
 #: ../../source/detailed_guide/llm_chat.md:9
 msgid "`llm_chat` 装饰器用于构建对话式应用，特别适合以下场景："
@@ -50,55 +51,57 @@ msgstr ""
 #: ../../source/detailed_guide/llm_chat.md:11
 msgid "**多轮对话**: 自动管理对话历史，支持上下文连续性"
 msgstr ""
-"**Multi-turn conversation**: Automatically manage conversation history, "
-"supporting contextual continuity"
+"**Multi-turn conversation**: Automatically manages conversation history, "
+"supports contextual continuity"
 
 #: ../../source/detailed_guide/llm_chat.md:12
 msgid "**流式响应**: 支持实时流式返回响应内容"
-msgstr "**Streaming Response**: Supports real-time streaming of response content"
+msgstr ""
+"**Streaming response**: Supports real-time streaming of response content"
 
 #: ../../source/detailed_guide/llm_chat.md:13
 msgid "**智能助手**: 集成工具调用能力，让 LLM 可以执行外部操作"
 msgstr ""
-"**Intelligent Assistant**: Integrates tool-calling capabilities, enabling"
-" LLMs to perform external operations"
+"**Intelligent Assistant**: Integrates tool calling capabilities, enabling "
+"LLMs to perform external operations."
 
 #: ../../source/detailed_guide/llm_chat.md:14
 msgid "**聊天机器人**: 适合构建实时交互的聊天应用"
-msgstr "Chatbot: Suitable for building real-time interactive chat applications"
+msgstr ""
+"**Chatbot**: Suitable for building real-time interactive chat applications"
 
 #: ../../source/detailed_guide/llm_chat.md:16
 msgid "主要功能特性"
-msgstr "Main functional features"
+msgstr "Main features"
 
 #: ../../source/detailed_guide/llm_chat.md:18
 msgid "**多轮对话支持**: 自动管理对话历史记录，保持上下文"
 msgstr ""
-"**Multiturn conversation support**: Automatically manage conversation "
-"history, maintain context"
+"**Multi-turn dialogue support**: Automatically manage dialogue history, "
+"maintain context"
 
 #: ../../source/detailed_guide/llm_chat.md:19
 msgid "**流式响应**: 返回异步生成器，支持实时流式输出"
 msgstr ""
-"**Streaming Response**: Returns an asynchronous generator that supports "
+"**Streaming response**: Returns an asynchronous generator that supports "
 "real-time streaming output"
 
 #: ../../source/detailed_guide/llm_chat.md:20
 msgid "**工具集成**: 支持在对话中调用工具，扩展 LLM 的能力范围"
 msgstr ""
-"**Tool Integration**: Supports calling tools in the dialogue to expand "
-"the capabilities of LLM"
+"**Tool Integration**: Supports calling tools in conversations to extend the "
+"capabilities of LLMs"
 
 #: ../../source/detailed_guide/llm_chat.md:21
 msgid "**灵活参数处理**: 智能处理历史记录参数和用户消息"
 msgstr ""
-"Flexible parameter handling: Intelligently process historical parameters "
-"and user messages"
+"**Flexible parameter handling**: Intelligent processing of historical record"
+" parameters and user messages"
 
 #: ../../source/detailed_guide/llm_chat.md:22
 msgid "**完整的日志记录**: 与框架日志系统集成，自动追踪对话"
 msgstr ""
-"Full log recording: Integrate with the framework's logging system to "
+"**Full Logging**: Integrates with the framework's logging system to "
 "automatically track conversations"
 
 #: ../../source/detailed_guide/llm_chat.md:24
@@ -109,166 +112,252 @@ msgstr "Decorator usage"
 msgid ""
 "⚠️ **重要说明**：`llm_chat` 只能装饰 `async def` 定义的异步函数，返回的也是可 `await` "
 "的协程；请在异步上下文中调用，或在脚本入口使用 `asyncio.run()`。"
-msgstr "⚠️ **Important Note**: `llm_chat` only decorates functions defined with `async def` and returns an awaitable coroutine; call it inside an async context or use `asyncio.run()` at entry."
+msgstr ""
+"⚠️ **Important Note**: `llm_chat` can only decorate asynchronously defined "
+"`async def` functions, and the returned value is also an awaitable "
+"coroutine; please call it within an asynchronous context or use "
+"`asyncio.run()` at the script entry point."
 
 #: ../../source/detailed_guide/llm_chat.md:28
 msgid "基本语法"
-msgstr "Basic Grammar"
+msgstr "Basic Syntax"
 
 #: ../../source/detailed_guide/llm_chat.md:52
 msgid "参数说明"
-msgstr "parameter description"
+msgstr "Parameter description"
 
 #: ../../source/detailed_guide/llm_chat.md:54
 msgid "**llm_interface** (必需): LLM 接口实例，用于与大语言模型通信"
 msgstr ""
-"llm_interface (required): LLM interface instance, used for communication "
-"with the large language model"
+"**llm_interface** (required): LLM interface instance, used to communicate "
+"with large language models"
 
 #: ../../source/detailed_guide/llm_chat.md:55
 msgid "**toolkit** (可选): 工具列表，可以是 Tool 对象或被 @tool 装饰的函数"
 msgstr ""
-"Toolkit (optional): List of tools, can be Tool objects or functions "
-"decorated with @tool"
+"**toolkit** (optional): A list of tools, which can be Tool objects or "
+"functions decorated with @tool."
 
 #: ../../source/detailed_guide/llm_chat.md:56
 msgid "**max_tool_calls** (可选): 最大工具调用次数，防止无限循环，默认为 5"
 msgstr ""
-"**max_tool_calls** (optional): Maximum number of tool calls, to prevent "
+"**max_tool_calls** (optional): Maximum number of tool calls, prevents "
 "infinite loops, defaults to 5"
 
 #: ../../source/detailed_guide/llm_chat.md:57
 msgid "**stream** (可选): 是否启用流式模式，默认为 True"
-msgstr "Stream (optional): Whether to enable streaming mode, defaults to True"
+msgstr ""
+"**stream** (optional): Whether to enable streaming mode, defaults to True"
 
 #: ../../source/detailed_guide/llm_chat.md:58
 msgid "**return_mode** (可选): 返回模式，可选值为 \"text\"（默认）或 \"raw\""
 msgstr ""
-"Return Mode (optional): Return mode, optional values are \"text\" "
-"(default) or \"raw\""
+"return_mode (optional): return mode, optional values are \"text\" (default) "
+"or \"raw\""
 
 #: ../../source/detailed_guide/llm_chat.md:59
-msgid "****llm_kwargs**: 额外的关键字参数，将直接传递给 LLM 接口（如 temperature、top_p 等）"
+msgid "**enable_event** (可选): 是否启用事件流，默认为 False"
 msgstr ""
-"**llm_kwargs**: additional keyword arguments that will be passed directly"
-" to the LLM interface (such as temperature, top_p, etc.)"
+"enable_event (optional): Whether to enable event streaming, defaults to "
+"False"
+
+#: ../../source/detailed_guide/llm_chat.md:60
+msgid "`False`: 返回 `(response, messages)` 元组（向后兼容模式）"
+msgstr ""
+"`False`: Returns `(response, messages)` tuple (backward compatibility mode)"
 
 #: ../../source/detailed_guide/llm_chat.md:61
-msgid "返回值"
-msgstr "Return Value"
+msgid "`True`: 返回 `ReactOutput`（`ResponseYield` 或 `EventYield`）"
+msgstr "True: Return `ReactOutput` (`ResponseYield` or `EventYield`)"
+
+#: ../../source/detailed_guide/llm_chat.md:62
+msgid "详细说明请参考 [事件流文档](event_stream.md)"
+msgstr ""
+"Please refer to the [Event Stream documentation](event_stream.md) for "
+"details."
 
 #: ../../source/detailed_guide/llm_chat.md:63
-msgid "`llm_chat` 装饰的函数返回一个异步生成器，每次迭代返回："
+msgid "****llm_kwargs**: 额外的关键字参数，将直接传递给 LLM 接口（如 temperature、top_p 等）"
 msgstr ""
-"The `llm_chat` decorated function returns an asynchronous generator, "
-"which yields each iteration:"
+"**llm_kwargs**: Additional keyword arguments that will be directly passed to"
+" the LLM interface (e.g., temperature, top_p, etc.)"
 
 #: ../../source/detailed_guide/llm_chat.md:65
+msgid "返回值"
+msgstr "Return value"
+
+#: ../../source/detailed_guide/llm_chat.md:67
+msgid "当 `enable_event=False`（默认）时，`llm_chat` 装饰的函数返回一个异步生成器，每次迭代返回："
+msgstr ""
+"When `enable_event=False` (default), the function decorated with `llm_chat` "
+"returns an asynchronous generator, and each iteration returns:"
+
+#: ../../source/detailed_guide/llm_chat.md:69
 msgid "`chunk` (str): 响应内容的一部分（流式模式）或完整响应（非流式）"
 msgstr ""
-"a part of the response content (streaming mode) or the complete response "
-"(non-streaming)"
-
-#: ../../source/detailed_guide/llm_chat.md:66
-msgid "`updated_history` (List[Dict[str, str]]): 更新后的对话历史"
-msgstr "Updated History (List[Dict[str, str]]): Updated conversation history"
-
-#: ../../source/detailed_guide/llm_chat.md:68
-msgid "使用示例"
-msgstr "usage example"
+"`chunk` (str): A part of the response content (in streaming mode) or the "
+"complete response (in non-streaming mode)"
 
 #: ../../source/detailed_guide/llm_chat.md:70
+msgid "`updated_history` (List[Dict[str, str]]): 更新后的对话历史"
+msgstr "updated_history"
+
+#: ../../source/detailed_guide/llm_chat.md:72
+msgid "当 `enable_event=True` 时，返回 `ReactOutput`，可以是："
+msgstr "When `enable_event=True`, `ReactOutput` is returned, which can be:"
+
+#: ../../source/detailed_guide/llm_chat.md:73
+msgid "`ResponseYield`: 包含响应和消息列表"
+msgstr "`ResponseYield`: A list containing responses and messages"
+
+#: ../../source/detailed_guide/llm_chat.md:74
+msgid "`EventYield`: 包含 ReAct 循环中的事件（如工具调用开始/结束、LLM 调用等）"
+msgstr ""
+"`EventYield`: Contains events within the ReAct loop (e.g., tool call "
+"start/end, LLM call, etc.)"
+
+#: ../../source/detailed_guide/llm_chat.md:76
+msgid "使用示例"
+msgstr "Usage example"
+
+#: ../../source/detailed_guide/llm_chat.md:78
 msgid "示例 1: 基础聊天助手"
 msgstr "Example 1: Basic Chat Assistant"
 
-#: ../../source/detailed_guide/llm_chat.md:72
+#: ../../source/detailed_guide/llm_chat.md:80
 msgid "最简单的对话助手实现："
 msgstr "The simplest dialogue assistant implementation:"
 
-#: ../../source/detailed_guide/llm_chat.md:110
+#: ../../source/detailed_guide/llm_chat.md:118
 msgid "示例 2: 带工具调用的聊天助手"
-msgstr "Example 2: Chatbot with tool calls"
+msgstr "Example 2: Chat assistant with tool calling"
 
-#: ../../source/detailed_guide/llm_chat.md:112
+#: ../../source/detailed_guide/llm_chat.md:120
 msgid "展示如何在对话中使用工具："
-msgstr "Show how to use tools in conversation:"
+msgstr "Demonstrate how to use tools in conversations:"
 
-#: ../../source/detailed_guide/llm_chat.md:172
+#: ../../source/detailed_guide/llm_chat.md:180
 msgid "示例 3: 交互式多轮对话"
 msgstr "Example 3: Interactive multi-turn conversation"
 
-#: ../../source/detailed_guide/llm_chat.md:174
+#: ../../source/detailed_guide/llm_chat.md:182
 msgid "展示如何维护完整的对话会话："
 msgstr "Demonstrate how to maintain a complete conversation session:"
 
-#: ../../source/detailed_guide/llm_chat.md:243
+#: ../../source/detailed_guide/llm_chat.md:251
 msgid "高级特性"
 msgstr "Advanced features"
 
-#: ../../source/detailed_guide/llm_chat.md:245
+#: ../../source/detailed_guide/llm_chat.md:253
 msgid "返回模式"
-msgstr "return mode"
+msgstr "Return mode"
 
-#: ../../source/detailed_guide/llm_chat.md:247
+#: ../../source/detailed_guide/llm_chat.md:255
 msgid "`return_mode` 参数控制返回的数据类型："
-msgstr "`return_mode` parameter controls the data type of the returned data:"
+msgstr ""
+"The `return_mode` parameter controls the data type of the returned data:"
 
-#: ../../source/detailed_guide/llm_chat.md:263
+#: ../../source/detailed_guide/llm_chat.md:271
 msgid "并发聊天会话"
 msgstr "Concurrent chat session"
 
-#: ../../source/detailed_guide/llm_chat.md:265
+#: ../../source/detailed_guide/llm_chat.md:273
 msgid "使用 `asyncio.gather` 处理多个并发的聊天会话："
-msgstr "Using `asyncio.gather` to handle multiple concurrent chat sessions:"
+msgstr "Use `asyncio.gather` to handle multiple concurrent chat sessions:"
 
-#: ../../source/detailed_guide/llm_chat.md:306
+#: ../../source/detailed_guide/llm_chat.md:314
 msgid "最佳实践"
-msgstr "Best Practices"
+msgstr "Best practices"
 
-#: ../../source/detailed_guide/llm_chat.md:308
+#: ../../source/detailed_guide/llm_chat.md:316
 msgid "1. 错误处理"
 msgstr "1. Error handling"
 
-#: ../../source/detailed_guide/llm_chat.md:322
+#: ../../source/detailed_guide/llm_chat.md:330
 msgid "2. 超时控制"
-msgstr "2. Timeout Control"
+msgstr "2. Timeout control"
 
-#: ../../source/detailed_guide/llm_chat.md:337
+#: ../../source/detailed_guide/llm_chat.md:345
 msgid "3. 历史记录限制"
 msgstr "3. History limit"
 
-#: ../../source/detailed_guide/llm_chat.md:339
+#: ../../source/detailed_guide/llm_chat.md:347
 msgid "为避免上下文过长，限制历史记录长度："
-msgstr "To avoid excessively long context, limit the length of historical records:"
+msgstr ""
+"To avoid excessively long context, limit the length of historical records."
 
-#: ../../source/detailed_guide/llm_chat.md:368
+#: ../../source/detailed_guide/llm_chat.md:376
 msgid "4. 日志与调试"
-msgstr "4. Logging and Debugging"
+msgstr "4. Logs and Debugging"
 
-#: ../../source/detailed_guide/llm_chat.md:381
+#: ../../source/detailed_guide/llm_chat.md:389
+msgid "5. 事件流（Event Stream）"
+msgstr "5. Event Stream"
+
+#: ../../source/detailed_guide/llm_chat.md:391
+msgid "事件流是 SimpleLLMFunc v0.5.0+ 引入的高级特性，允许你实时观察 ReAct 循环的完整执行过程。"
+msgstr ""
+"Event streams are an advanced feature introduced in SimpleLLMFunc v0.5.0+ "
+"that allow you to observe the complete execution process of ReAct loops in "
+"real time."
+
+#: ../../source/detailed_guide/llm_chat.md:393
+msgid "通过设置 `enable_event=True`，你可以："
+msgstr "By setting `enable_event=True`, you can:"
+
+#: ../../source/detailed_guide/llm_chat.md:395
+msgid "**实时监控**：观察 LLM 调用、工具调用的实时状态"
+msgstr ""
+"**Real-time monitoring**: Observe the real-time status of LLM calls and tool"
+" calls"
+
+#: ../../source/detailed_guide/llm_chat.md:396
+msgid "**性能分析**：获取详细的执行统计和性能指标"
+msgstr ""
+"**Performance Analysis**: Get detailed execution statistics and performance "
+"metrics"
+
+#: ../../source/detailed_guide/llm_chat.md:397
+msgid "**自定义 UI**：基于事件构建丰富的用户界面"
+msgstr "Custom UI: Build rich user interfaces based on events"
+
+#: ../../source/detailed_guide/llm_chat.md:398
+msgid "**调试支持**：深入了解 ReAct 循环的执行细节"
+msgstr ""
+"**Debugging Support**: Deep dive into the execution details of the ReAct "
+"loop"
+
+#: ../../source/detailed_guide/llm_chat.md:400
+msgid "**基本用法**："
+msgstr "Basic Usage"
+
+#: ../../source/detailed_guide/llm_chat.md:418
+msgid "**详细文档**：请参考 [事件流文档](event_stream.md) 了解完整的事件类型、使用示例和最佳实践。"
+msgstr ""
+"**Detailed Documentation**: Please refer to the [Event Stream "
+"Documentation](event_stream.md) for a complete list of event types, usage "
+"examples, and best practices."
+
+#: ../../source/detailed_guide/llm_chat.md:420
 msgid "常见问题"
-msgstr "FAQ"
+msgstr "Frequently Asked Questions"
 
-#: ../../source/detailed_guide/llm_chat.md:383
+#: ../../source/detailed_guide/llm_chat.md:422
 msgid "Q: 如何保存和恢复对话历史？"
-msgstr "A: How to save and restore chat history?"
+msgstr "Q: How to save and restore conversation history?"
 
-#: ../../source/detailed_guide/llm_chat.md:407
+#: ../../source/detailed_guide/llm_chat.md:446
 msgid "Q: 如何处理 LLM 拒绝或无效响应？"
-msgstr "A: How to handle LLM refusal or invalid responses?"
+msgstr "Q: How to handle LLM rejection or invalid responses?"
 
-#: ../../source/detailed_guide/llm_chat.md:435
+#: ../../source/detailed_guide/llm_chat.md:474
 msgid "通过这些示例和最佳实践，你可以构建功能强大的对话应用。`llm_chat` 装饰器提供了简洁而强大的方式来实现复杂的对话逻辑。"
 msgstr ""
-"With these examples and best practices, you can build powerful "
-"conversational applications. The `llm_chat` decorator provides a concise "
-"and powerful way to implement complex conversational logic."
+"Using these examples and best practices, you can build powerful "
+"conversational applications. The `llm_chat` decorator provides a concise and"
+" powerful way to implement complex conversational logic."
 
-#~ msgid "⚠️ **重要说明**：`llm_chat` 只能装饰 `async def` 定义的异步函数，调用时需要在异步上下文中使用 `await`。"
+#~ msgid "`llm_chat` 装饰的函数返回一个异步生成器，每次迭代返回："
 #~ msgstr ""
-#~ "⚠️ **Important Note**: `llm_chat` can "
-#~ "only decorate asynchronous functions defined"
-#~ " with `async def`, and it must "
-#~ "be called within an asynchronous context"
-#~ " using `await`."
-
+#~ "the function decorated with `llm_chat` returns an asynchronous generator "
+#~ "that returns each time:"

@@ -12,6 +12,7 @@
 LLM 接口层 <detailed_guide/llm_interface>
 llm_function 装饰器 <detailed_guide/llm_function>
 llm_chat 装饰器 <detailed_guide/llm_chat>
+事件流系统 <detailed_guide/event_stream>
 工具系统 <detailed_guide/tool>
 ```
 
@@ -28,6 +29,9 @@ llm_chat 装饰器 <detailed_guide/llm_chat>
 
 ### 我想要构建聊天应用
 👉 [llm_chat 装饰器](detailed_guide/llm_chat.md) - 构建多轮对话和 Agent 应用
+
+### 我想要观察执行过程
+👉 [事件流系统](detailed_guide/event_stream.md) - 实时观察 ReAct 循环的执行过程
 
 ### 我想要整合工具/API
 👉 [工具系统](detailed_guide/tool.md) - 让 LLM 调用外部函数和 API
@@ -62,6 +66,7 @@ llm_chat 装饰器 <detailed_guide/llm_chat>
 | 基础配置 | [配置与环境](detailed_guide/config.md) | API 密钥、环境变量、provider.json |
 | 简单任务 | [llm_function 装饰器](detailed_guide/llm_function.md) | 无状态函数、文本处理、数据转换 |
 | 对话应用 | [llm_chat 装饰器](detailed_guide/llm_chat.md) | 多轮对话、历史管理、流式响应 |
+| 事件流 | [事件流系统](detailed_guide/event_stream.md) | 实时观察、工具调用监控、性能分析 |
 | 工具集成 | [工具系统](detailed_guide/tool.md) | 工具定义、调用、多模态返回 |
 | 系统设计 | [LLM 接口层](detailed_guide/llm_interface.md) | 接口抽象、密钥池、流量控制 |
 | 实战示例 | [示例代码](examples.md) | 各种场景的完整代码 |

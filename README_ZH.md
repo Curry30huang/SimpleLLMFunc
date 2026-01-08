@@ -21,9 +21,11 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/NiJingzhe/SimpleLLMFunc/graphs/commit-activity)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/NiJingzhe/SimpleLLMFunc/pulls)
 
-### 更新说明 (0.4.2)
+### 更新说明 (0.5.0.beta1)
 
-查看 **[更新日志](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/CHANGELOG.md)** 了解所有版本改进
+🚀 **新功能：事件流系统** - 实时观察 ReAct 执行循环。查看 **[更新日志](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/CHANGELOG.md)** 了解详情。
+
+⚠️ **注意**：这是 beta 版本，可能引入可选的破坏性更改。请查看更新日志了解迁移指南。
 
 ### 📚 完整文档
 
@@ -837,7 +839,7 @@ python examples/parallel_toolcall_example.py
   month = {October},
   title = {{SimpleLLMFunc: A New Approach to Build LLM Applications}},
   url = {https://github.com/NiJingzhe/SimpleLLMFunc},
-  version = {0.4.2},
+  version = {0.5.0.beta1},
   year = {2025}
 }
 ```

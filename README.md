@@ -21,9 +21,11 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/NiJingzhe/SimpleLLMFunc/graphs/commit-activity)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/NiJingzhe/SimpleLLMFunc/pulls)
 
-### Update Notes (0.4.2)
+### Update Notes (0.5.0.beta1)
 
-Check **[CHANGELOG](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/CHANGELOG.md)** for all version improvements
+🚀 **New Feature: Event Stream System** - Real-time observability for ReAct execution cycles. See **[CHANGELOG](https://github.com/NiJingzhe/SimpleLLMFunc/blob/master/CHANGELOG.md)** for details.
+
+⚠️ **Note**: This is a beta release. Optional breaking changes may be introduced. See CHANGELOG for migration guide.
 
 ### 📚 Complete Documentation
 
@@ -832,7 +834,7 @@ If you have used SimpleLLMFunc in your research or projects, please cite the fol
   month = {October},
   title = {{SimpleLLMFunc: A New Approach to Build LLM Applications}},
   url = {https://github.com/NiJingzhe/SimpleLLMFunc},
-  version = {0.4.2},
+  version = {0.5.0.beta1},
   year = {2025}
 }
 ```

@@ -1,4 +1,5 @@
 import inspect
+import json
 from functools import wraps
 from typing import (
     Any,
@@ -28,8 +29,9 @@ from SimpleLLMFunc.interface.llm_interface import LLM_Interface
 from SimpleLLMFunc.logger import push_debug
 from SimpleLLMFunc.logger.logger import get_location
 from SimpleLLMFunc.tool import Tool
-from SimpleLLMFunc.type.decorator import HistoryList
+from SimpleLLMFunc.type import HistoryList
 from SimpleLLMFunc.observability.langfuse_client import langfuse_client
+from SimpleLLMFunc.hooks.stream import ReactOutput, ResponseYield, is_response_yield, responses_only
 
 # Type aliases
 ToolkitList = List[Union[Tool, Callable[..., Awaitable[Any]]]]  # List of Tool objects or async functions
@@ -54,10 +56,11 @@ def llm_chat(
     max_tool_calls: int = DEFAULT_MAX_TOOL_CALLS,
     stream: bool = False,
     return_mode: Literal["text", "raw"] = "text",
+    enable_event: bool = False,
     **llm_kwargs: Any,
 ) -> Callable[
     [Union[Callable[P, Any], Callable[P, Awaitable[Any]]]],
-    Callable[P, AsyncGenerator[Tuple[Any, HistoryList], None]],
+    Callable[P, AsyncGenerator[Union[Tuple[Any, HistoryList], ReactOutput], None]],
 ]:
     """
     Async LLM chat decorator for implementing asynchronous conversational interactions with
@@ -102,10 +105,14 @@ def llm_chat(
         return_mode: Return mode, either "text" or "raw" (default: "text")
             - "text" mode: returns response as string, history as List[Dict[str, str]]
             - "raw" mode: returns raw OAI API response, history as List[Dict[str, str]]
+        enable_event: Whether to enable event stream (default: False)
+            - False: yields (response, messages) tuples (backward compatible)
+            - True: yields ReactOutput (ResponseYield or EventYield)
         **llm_kwargs: Additional keyword arguments passed directly to the LLM interface
 
     Returns:
         Decorated async generator function that yields (response_content, updated_history) tuples
+        or ReactOutput when enable_event=True
 
     Example:
         ```python
@@ -121,7 +128,7 @@ def llm_chat(
 
     def decorator(
         func: Union[Callable[P, Any], Callable[P, Awaitable[Any]]],
-    ) -> Callable[P, AsyncGenerator[Tuple[Any, HistoryList], None]]:
+    ) -> Callable[P, AsyncGenerator[Union[Tuple[Any, HistoryList], ReactOutput], None]]:
         signature_meta = inspect.signature(func)
         docstring = func.__doc__ or ""
         func_name = func.__name__
@@ -130,6 +137,13 @@ def llm_chat(
         async def wrapper(*args, **kwargs):
             # Step 1: 解析函数签名
             function_signature, _ = parse_function_signature(func, args, kwargs)
+            
+            # 构建用户任务提示（用于事件）
+            user_task_prompt = json.dumps(
+                function_signature.bound_args.arguments,
+                default=str,
+                ensure_ascii=False,
+            )
 
             # Step 2: 设置日志上下文
             async with setup_log_context(
@@ -149,6 +163,7 @@ def llm_chat(
                         "max_tool_calls": max_tool_calls,
                         "stream": stream,
                         "return_mode": return_mode,
+                        "enable_event": enable_event,
                     },
                 ) as chat_span:
                     try:
@@ -168,31 +183,40 @@ def llm_chat(
                             stream=stream,
                             llm_kwargs=llm_kwargs,
                             func_name=function_signature.func_name,
+                            enable_event=enable_event,
+                            trace_id=function_signature.trace_id,
+                            user_task_prompt=user_task_prompt,
                         )
 
-                        # Step 5: 处理响应流
                         collected_responses = []
                         final_history = None
+                        
+                        if enable_event:
+                            # 事件模式：直接 yield ReactOutput
+                            async for output in response_stream:
+                                yield output
+                        else:
+                            # 向后兼容模式：处理响应流
+                            async for content, history in process_chat_response_stream(
+                                response_stream=response_stream,
+                                return_mode=return_mode,
+                                messages=messages,
+                                func_name=function_signature.func_name,
+                                stream=stream,
+                            ):
+                                collected_responses.append(content)
+                                final_history = history
+                                yield content, history
 
-                        async for content, history in process_chat_response_stream(
-                            response_stream=response_stream,
-                            return_mode=return_mode,
-                            messages=messages,
-                            func_name=function_signature.func_name,
-                            stream=stream,
-                        ):
-                            collected_responses.append(content)
-                            final_history = history
-                            yield content, history
-
-                        # 更新 Langfuse span
-                        chat_span.update(
-                            output={
-                                "responses": collected_responses,
-                                "final_history": final_history,
-                                "total_responses": len(collected_responses),
-                            },
-                        )
+                        # 更新 Langfuse span（仅在非事件模式或收集到响应时）
+                        if not enable_event or collected_responses:
+                            chat_span.update(
+                                output={
+                                    "responses": collected_responses,
+                                    "final_history": final_history,
+                                    "total_responses": len(collected_responses),
+                                },
+                            )
                     except Exception as exc:
                         # 更新 span 错误信息
                         chat_span.update(
@@ -207,7 +231,7 @@ def llm_chat(
         wrapper.__signature__ = signature_meta  # type: ignore
 
         return cast(
-            Callable[P, AsyncGenerator[Tuple[Any, HistoryList], None]],
+            Callable[P, AsyncGenerator[Union[Tuple[Any, HistoryList], ReactOutput], None]],
             wrapper,
         )
 

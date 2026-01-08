@@ -2,30 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TypedDict, Literal
+from typing import Any, Dict, List
 
 from SimpleLLMFunc.logger import push_error, push_warning
 from SimpleLLMFunc.logger.logger import get_location
 
-
-class ReasoningDetail(TypedDict):
-    """推理细节类型（如 Google Gemini 的 reasoning_details）"""
-    id: str
-    format: str
-    index: int
-    type: Literal["reasoning.encrypted"]
-    data: str
-
-
-class ToolCallFunctionInfo(TypedDict):
-    name: Optional[str]
-    arguments: str
-
-
-class AccumulatedToolCall(TypedDict):
-    id: Optional[str]
-    type: Optional[str]
-    function: ToolCallFunctionInfo
+# 从统一类型系统导入类型
+from SimpleLLMFunc.type.message import ReasoningDetail
+from SimpleLLMFunc.type.tool_call import (
+    AccumulatedToolCall,
+    ToolCallFunctionInfo,
+)
 
 
 def extract_tool_calls(response: Any) -> List[Dict[str, Any]]:

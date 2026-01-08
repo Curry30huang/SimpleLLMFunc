@@ -11,7 +11,7 @@ from SimpleLLMFunc.base.post_process import (
 )
 from SimpleLLMFunc.logger import app_log
 from SimpleLLMFunc.logger.logger import get_location
-from SimpleLLMFunc.type.decorator import HistoryList
+from SimpleLLMFunc.type import HistoryList
 
 
 def extract_stream_response_content(chunk: Any, func_name: str) -> str:

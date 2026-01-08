@@ -24,6 +24,7 @@ async def generate_summary(text: str) -> str:
 """
 
 import inspect
+import json
 from functools import wraps
 from typing import (
     List,
@@ -61,6 +62,7 @@ def llm_function(
     max_tool_calls: int = 5,
     system_prompt_template: Optional[str] = None,
     user_prompt_template: Optional[str] = None,
+    enable_event: bool = False,
     **llm_kwargs: Any,
 ) -> Callable[
     [Union[Callable[..., T], Callable[..., Awaitable[T]]]], Callable[..., Awaitable[T]]
@@ -154,6 +156,7 @@ def llm_function(
                         "trace_id": signature.trace_id,
                         "tools_available": len(toolkit) if toolkit else 0,
                         "max_tool_calls": max_tool_calls,
+                        "enable_event": enable_event,
                     },
                 ) as function_span:
                     try:
@@ -166,6 +169,13 @@ def llm_function(
                         )
 
                         # Step 4: 执行 ReAct 循环
+                        # 构建用户任务提示（用于事件）
+                        user_task_prompt = json.dumps(
+                            signature.bound_args.arguments,
+                            default=str,
+                            ensure_ascii=False,
+                        )
+                        
                         final_response = await execute_react_loop(
                             llm_interface=llm_interface,
                             messages=messages,
@@ -173,6 +183,9 @@ def llm_function(
                             max_tool_calls=max_tool_calls,
                             llm_kwargs=llm_kwargs,
                             func_name=signature.func_name,
+                            enable_event=enable_event,
+                            trace_id=signature.trace_id,
+                            user_task_prompt=user_task_prompt,
                         )
 
                         # Step 5: 解析和验证响应

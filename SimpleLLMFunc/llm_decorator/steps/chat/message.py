@@ -9,7 +9,7 @@ from SimpleLLMFunc.base.type_resolve.multimodal import has_multimodal_content
 from SimpleLLMFunc.logger import push_warning
 from SimpleLLMFunc.logger.logger import get_location
 from SimpleLLMFunc.tool import Tool
-from SimpleLLMFunc.type.decorator import HistoryList
+from SimpleLLMFunc.type import HistoryList
 from SimpleLLMFunc.llm_decorator.steps.common.types import FunctionSignature
 from SimpleLLMFunc.llm_decorator.utils import process_tools
 

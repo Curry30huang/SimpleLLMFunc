@@ -9,8 +9,10 @@ from SimpleLLMFunc.base.ReAct import execute_llm
 from SimpleLLMFunc.base.post_process import extract_content_from_response
 from SimpleLLMFunc.interface.llm_interface import LLM_Interface
 from SimpleLLMFunc.logger import push_debug, push_error, push_warning
-from SimpleLLMFunc.logger.logger import get_location
-from SimpleLLMFunc.type.message import MessageList
+from SimpleLLMFunc.logger.logger import get_location, get_current_context_attribute
+from SimpleLLMFunc.logger.context_manager import get_current_trace_id
+from SimpleLLMFunc.type import MessageList, ToolDefinitionList
+from SimpleLLMFunc.hooks.stream import ReactOutput, ResponseYield, is_response_yield
 
 
 from SimpleLLMFunc.tool import Tool
@@ -21,7 +23,7 @@ from SimpleLLMFunc.llm_decorator.utils import process_tools
 def prepare_tools_for_execution(
     toolkit: Optional[List[Union[Tool, Callable[..., Awaitable[Any]]]]],
     func_name: str,
-) -> tuple[Optional[List[Dict[str, Any]]], Dict[str, Callable[..., Awaitable[Any]]]]:
+) -> tuple[ToolDefinitionList, Dict[str, Callable[..., Awaitable[Any]]]]:
     """准备工具供执行使用"""
     return process_tools(toolkit, func_name)
 
@@ -29,25 +31,39 @@ def prepare_tools_for_execution(
 async def execute_llm_call(
     llm_interface: LLM_Interface,
     messages: MessageList,
-    tools: Optional[List[Dict[str, Any]]],
+    tools: ToolDefinitionList,
     tool_map: Dict[str, Callable[..., Awaitable[Any]]],
     max_tool_calls: int,
     stream: bool = False,
+    enable_event: bool = False,
+    trace_id: str = "",
+    user_task_prompt: str = "",
     **llm_kwargs: Any,
 ) -> AsyncGenerator[Any, None]:
     """执行 LLM 调用"""
-    # 类型转换：MessageList 兼容 List[Dict[str, Any]]
-    # execute_llm 现在返回 (response, updated_messages) 元组，但我们只需要 response
-    async for response, _ in execute_llm(
+    func_name = get_current_context_attribute("function_name") or "Unknown Function"
+    current_trace_id = trace_id or get_current_trace_id() or ""
+    
+    async for output in execute_llm(
         llm_interface=llm_interface,
-        messages=cast(List[Dict[str, Any]], messages),
+        messages=messages,
         tools=tools,
         tool_map=tool_map,
         max_tool_calls=max_tool_calls,
         stream=stream,
+        enable_event=enable_event,
+        trace_id=current_trace_id,
+        user_task_prompt=user_task_prompt,
         **llm_kwargs,
     ):
-        yield response
+        if enable_event:
+            # 事件模式：只 yield 响应
+            if is_response_yield(output):
+                yield output.response
+        else:
+            # 向后兼容模式：直接 yield response
+            response, _ = output
+            yield response
 
 
 async def get_final_response(
@@ -70,11 +86,14 @@ def check_response_content_empty(response: Any, func_name: str) -> bool:
 async def retry_llm_call(
     llm_interface: LLM_Interface,
     messages: MessageList,
-    tools: Optional[List[Dict[str, Any]]],
+    tools: ToolDefinitionList,
     tool_map: Dict[str, Callable[..., Awaitable[Any]]],
     max_tool_calls: int,
     retry_times: int,
     func_name: str,
+    enable_event: bool = False,
+    trace_id: str = "",
+    user_task_prompt: str = "",
     **llm_kwargs: Any,
 ) -> Any:
     """重试 LLM 调用"""
@@ -95,6 +114,9 @@ async def retry_llm_call(
             tool_map=tool_map,
             max_tool_calls=max_tool_calls,
             stream=False,
+            enable_event=enable_event,
+            trace_id=trace_id,
+            user_task_prompt=user_task_prompt,
             **llm_kwargs,
         )
 
@@ -127,6 +149,9 @@ async def execute_react_loop(
     max_tool_calls: int,
     llm_kwargs: Dict[str, Any],
     func_name: str,
+    enable_event: bool = False,
+    trace_id: str = "",
+    user_task_prompt: str = "",
 ) -> Any:
     """执行 ReAct 循环的完整流程（包含重试）"""
     # 1. 准备工具
@@ -140,6 +165,9 @@ async def execute_react_loop(
         tool_map=tool_map,
         max_tool_calls=max_tool_calls,
         stream=False,
+        enable_event=enable_event,
+        trace_id=trace_id,
+        user_task_prompt=user_task_prompt,
         **llm_kwargs,
     )
 
@@ -164,6 +192,9 @@ async def execute_react_loop(
             max_tool_calls=max_tool_calls,
             retry_times=retry_times,
             func_name=func_name,
+            enable_event=enable_event,
+            trace_id=trace_id,
+            user_task_prompt=user_task_prompt,
             **llm_kwargs,
         )
 

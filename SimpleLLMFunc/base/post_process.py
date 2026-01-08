@@ -49,9 +49,22 @@ def extract_content_from_response(response: Any, func_name: str) -> str:
     content = ""
     try:
         if hasattr(response, "choices") and len(response.choices) > 0:
-            message = response.choices[0].message
-            if message and hasattr(message, "content") and message.content is not None:
-                content = message.content
+            choice = response.choices[0]
+            # 检查是否是流式响应的 Choice（有 delta 属性）
+            if hasattr(choice, "delta") and choice.delta:
+                # 这是流式响应的 Choice，使用 delta
+                delta = choice.delta
+                if hasattr(delta, "content") and delta.content is not None:
+                    content = delta.content
+                else:
+                    content = ""
+            elif hasattr(choice, "message") and choice.message:
+                # 这是非流式响应的 Choice，使用 message
+                message = choice.message
+                if hasattr(message, "content") and message.content is not None:
+                    content = message.content
+                else:
+                    content = ""
             else:
                 content = ""
         else:

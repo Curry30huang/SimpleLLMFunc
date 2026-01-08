@@ -18,12 +18,13 @@ from typing import (
 
 from SimpleLLMFunc.logger import get_location, push_debug, push_warning
 from SimpleLLMFunc.tool import Tool
+from SimpleLLMFunc.type import ToolDefinitionList
 
 
 def process_tools(
     toolkit: Optional[List[Union[Tool, Callable[..., Awaitable[Any]]]]] = None,
     func_name: str = "unknown_function",
-) -> Tuple[Optional[List[Dict[str, Any]]], Dict[str, Callable[..., Awaitable[Any]]]]:
+) -> Tuple[ToolDefinitionList, Dict[str, Callable[..., Awaitable[Any]]]]:
     """
     处理工具列表，返回 API 所需的工具参数和工具映射。
 

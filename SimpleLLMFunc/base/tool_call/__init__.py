@@ -6,7 +6,6 @@ from SimpleLLMFunc.base.tool_call.execution import (
 )
 from SimpleLLMFunc.base.tool_call.extraction import (
     AccumulatedToolCall,
-    ReasoningDetail,
     ToolCallFunctionInfo,
     accumulate_tool_calls_from_chunks,
     extract_reasoning_details,
@@ -14,6 +13,8 @@ from SimpleLLMFunc.base.tool_call.extraction import (
     extract_tool_calls,
     extract_tool_calls_from_stream_response,
 )
+# 从统一类型系统导入 ReasoningDetail（向后兼容）
+from SimpleLLMFunc.type.message import ReasoningDetail
 from SimpleLLMFunc.base.tool_call.validation import (
     is_valid_tool_result,
     serialize_tool_output_for_langfuse,

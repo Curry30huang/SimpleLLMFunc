@@ -1,10 +1,27 @@
 """OpenAI API message type definitions.
 
 直接使用 OpenAI SDK 定义的消息类型，确保类型安全。
+
 消息类型结构是固定的：
 - role: "system" | "user" | "assistant" | "tool" | "function"
 - content: str | List[Dict[str, Any]] | None (取决于 role)
 - reasoning_details: 可选字段，某些模型（如 Google Gemini）会返回 reasoning 信息
+
+类型说明：
+- MessageParam: 单个消息参数类型，可以是 OpenAI SDK 的 ChatCompletionMessage 或扩展的 ExtendedMessageParam
+- MessageList: 消息列表类型，用于传递对话历史
+- ReasoningDetail: 推理细节类型（用于 Google Gemini 等模型）
+- ExtendedMessageParam: 扩展的消息参数类型，支持额外的字段如 reasoning_details
+
+使用示例：
+    ```python
+    from SimpleLLMFunc.type.message import MessageList, MessageParam
+    
+    messages: MessageList = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hello!"},
+    ]
+    ```
 """
 
 from __future__ import annotations

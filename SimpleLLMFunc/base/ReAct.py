@@ -272,7 +272,6 @@ async def _process_tool_calls_with_events(
             pass
     
     # 使用原始的 process_tool_calls 处理消息（它已经处理了所有逻辑）
-    from SimpleLLMFunc.base.tool_call.execution import process_tool_calls
     return await process_tool_calls(tool_calls, messages, tool_map)
 
 
@@ -477,7 +476,6 @@ async def execute_llm(
         llm_call_execution_time = time.time() - llm_call_start_time
         if enable_event:
             try:
-                from SimpleLLMFunc.base.messages import extract_usage_from_response
                 usage_info = extract_usage_from_response(last_response)
                 tool_calls_typed: List[ToolCall] = [dict_to_tool_call(tc) for tc in tool_calls] if tool_calls else []
                 
@@ -595,7 +593,6 @@ async def execute_llm(
         for event in event_queue:
             yield event
     else:
-        from SimpleLLMFunc.base.tool_call.execution import process_tool_calls
         current_messages = await process_tool_calls(
             tool_calls=tool_calls,
             messages=current_messages,
@@ -877,7 +874,6 @@ async def execute_llm(
             for event in event_queue:
                 yield event
         else:
-            from SimpleLLMFunc.base.tool_call.execution import process_tool_calls
             current_messages = await process_tool_calls(
                 tool_calls=tool_calls,
                 messages=current_messages,

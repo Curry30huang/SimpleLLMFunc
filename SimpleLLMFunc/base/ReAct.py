@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import json
 import time
 
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from SimpleLLMFunc.interface.llm_interface import LLM_Interface
 from SimpleLLMFunc.type import MessageList, ToolDefinitionList, ToolCall, ToolCallArguments, ToolResult
@@ -126,8 +126,8 @@ async def _process_tool_calls_with_events(
         # 发射工具调用开始事件
         if enable_event:
             try:
-                arguments: ToolCallArguments = json.loads(arguments_str)
-                tool_call_typed = dict_to_tool_call(tool_call)
+                arguments_start: ToolCallArguments = json.loads(arguments_str)
+                tool_call_typed_start = dict_to_tool_call(tool_call)
                 event_yield_callback(
                     EventYield(
                         event=ToolCallStartEvent(
@@ -138,8 +138,8 @@ async def _process_tool_calls_with_events(
                             iteration=iteration,
                             tool_name=tool_name,
                             tool_call_id=tool_call_id,
-                            arguments=arguments,
-                            tool_call=tool_call_typed,
+                            arguments=arguments_start,
+                            tool_call=tool_call_typed_start,
                         )
                     )
                 )
@@ -182,7 +182,7 @@ async def _process_tool_calls_with_events(
         # 发射工具调用结束或错误事件
         if enable_event:
             try:
-                arguments: ToolCallArguments = json.loads(arguments_str)
+                arguments_end: ToolCallArguments = json.loads(arguments_str)
                 if tool_error:
                     event_yield_callback(
                         EventYield(
@@ -194,7 +194,7 @@ async def _process_tool_calls_with_events(
                                 iteration=iteration,
                                 tool_name=tool_name,
                                 tool_call_id=tool_call_id,
-                                arguments=arguments,
+                                arguments=arguments_end,
                                 error=tool_error,
                                 error_message=str(tool_error),
                                 error_type=type(tool_error).__name__,
@@ -213,7 +213,7 @@ async def _process_tool_calls_with_events(
                                 iteration=iteration,
                                 tool_name=tool_name,
                                 tool_call_id=tool_call_id,
-                                arguments=arguments,
+                                arguments=arguments_end,
                                 result=tool_result if tool_result is not None else "",
                                 execution_time=tool_execution_time,
                                 success=tool_error is None,
@@ -272,7 +272,8 @@ async def _process_tool_calls_with_events(
             pass
     
     # 使用原始的 process_tool_calls 处理消息（它已经处理了所有逻辑）
-    return await process_tool_calls(tool_calls, messages, tool_map)
+    result = await process_tool_calls(tool_calls, cast(List[Dict[str, Any]], messages), tool_map)
+    return cast(MessageList, result)
 
 
 async def execute_llm(
@@ -339,7 +340,6 @@ async def execute_llm(
                     user_task_prompt=user_task_prompt,
                     initial_messages=current_messages.copy(),
                     available_tools=tools,
-                    extra={},  # 显式传递 extra 作为关键字参数
                 )
             )
         except Exception:
@@ -401,7 +401,7 @@ async def execute_llm(
             chunk_index = 0
             accumulated_content = ""
             async for chunk in llm_interface.chat_stream(
-                messages=current_messages,
+                messages=cast(List[Dict[str, Any]], current_messages),
                 tools=tools,
                 **llm_kwargs_filtered,
             ):
@@ -442,14 +442,14 @@ async def execute_llm(
                     except Exception:
                         pass
                 else:
-                    yield chunk, current_messages.copy()
+                    yield chunk, cast(MessageList, current_messages.copy())
 
             tool_calls = accumulate_tool_calls_from_chunks(tool_call_chunks)
             reasoning_details = reasoning_details_list
         else:
             # Handle non-streaming response
             initial_response = await llm_interface.chat(
-                messages=current_messages,
+                messages=cast(List[Dict[str, Any]], current_messages),
                 tools=tools,
                 **llm_kwargs_filtered,
             )
@@ -470,14 +470,14 @@ async def execute_llm(
                 except Exception:
                     pass
             else:
-                yield initial_response, current_messages.copy()
+                yield initial_response, cast(MessageList, current_messages.copy())
 
         # 发射 LLM 调用结束事件
         llm_call_execution_time = time.time() - llm_call_start_time
         if enable_event:
             try:
                 usage_info = extract_usage_from_response(last_response)
-                tool_calls_typed: List[ToolCall] = [dict_to_tool_call(tc) for tc in tool_calls] if tool_calls else []
+                tool_calls_typed_initial: List[ToolCall] = [dict_to_tool_call(tc) for tc in tool_calls] if tool_calls else []
                 
                 yield EventYield(
                     event=LLMCallEndEvent(
@@ -488,7 +488,7 @@ async def execute_llm(
                         iteration=iteration,
                         response=last_response,
                         messages=current_messages.copy(),
-                        tool_calls=tool_calls_typed,
+                        tool_calls=tool_calls_typed_initial,
                         usage=usage_info,
                         execution_time=llm_call_execution_time,
                     )
@@ -504,14 +504,14 @@ async def execute_llm(
         # Append assistant response to message history
         if content.strip() != "":
             assistant_message = build_assistant_response_message(content)
-            current_messages.append(assistant_message)
+            current_messages.append(cast(Any, assistant_message))
 
         if len(tool_calls) != 0:
             assistant_tool_call_message = build_assistant_tool_message(
                 tool_calls, 
                 reasoning_details if reasoning_details else None
             )
-            current_messages.append(assistant_tool_call_message)
+            current_messages.append(cast(Any, assistant_tool_call_message))
         else:
             # No tool calls, return final result
             # 发射 ReAct 结束事件（无工具调用的情况）
@@ -546,18 +546,32 @@ async def execute_llm(
             
             # 更新观测数据
             usage_info = extract_usage_from_response(last_response)
+            usage_dict_no_tools: Optional[Dict[str, int]] = None
+            if usage_info:
+                usage_dict_no_tools = {
+                    "prompt_tokens": usage_info.prompt_tokens,
+                    "completion_tokens": usage_info.completion_tokens,
+                    "total_tokens": usage_info.total_tokens,
+                }
             generation_span.update(
                 output={"content": content, "tool_calls": []},
-                usage_details=usage_info,
+                usage_details=usage_dict_no_tools,
             )
             # 注意：响应已经在上面 yield 过了，这里直接 return
             return
 
         # 更新观测数据
         usage_info = extract_usage_from_response(last_response)
+        usage_dict_with_tools: Optional[Dict[str, int]] = None
+        if usage_info:
+            usage_dict_with_tools = {
+                "prompt_tokens": usage_info.prompt_tokens,
+                "completion_tokens": usage_info.completion_tokens,
+                "total_tokens": usage_info.total_tokens,
+            }
         generation_span.update(
             output={"content": content, "tool_calls": tool_calls},
-            usage_details=usage_info,
+            usage_details=usage_dict_with_tools,
         )
 
     # Phase 2: Tool calling loop
@@ -573,10 +587,10 @@ async def execute_llm(
     # 使用支持事件的工具调用处理函数
     if enable_event:
         # 创建事件发射队列
-        event_queue: List[EventYield] = []
+        event_queue_first: List[EventYield] = []
         
         def event_callback(event: EventYield) -> None:
-            event_queue.append(event)
+            event_queue_first.append(event)
         
         current_messages = await _process_tool_calls_with_events(
             tool_calls=tool_calls,
@@ -590,14 +604,15 @@ async def execute_llm(
         )
         
         # 发射所有收集的事件
-        for event in event_queue:
+        for event in event_queue_first:
             yield event
-    else:
-        current_messages = await process_tool_calls(
-            tool_calls=tool_calls,
-            messages=current_messages,
-            tool_map=tool_map,
-        )
+        else:
+            result_messages_iteration = await process_tool_calls(
+                tool_calls=tool_calls,
+                messages=cast(List[Dict[str, Any]], current_messages),
+                tool_map=tool_map,
+            )
+            current_messages = cast(MessageList, result_messages_iteration)
 
     while call_count < max_tool_calls:
         # Phase 3: Iterative LLM-tool interaction
@@ -670,7 +685,7 @@ async def execute_llm(
                 chunk_index = 0
                 accumulated_content = ""
                 async for chunk in llm_interface.chat_stream(
-                    messages=current_messages,
+                    messages=cast(List[Dict[str, Any]], current_messages),
                     tools=tools,
                     **llm_kwargs_filtered,
                 ):
@@ -715,13 +730,13 @@ async def execute_llm(
                         except Exception:
                             pass
                     else:
-                        yield chunk, current_messages.copy()
+                        yield chunk, cast(MessageList, current_messages.copy())
                 tool_calls = accumulate_tool_calls_from_chunks(tool_call_chunks)
                 reasoning_details = reasoning_details_list
             else:
                 # Handle non-streaming response after tool calls
                 response = await llm_interface.chat(
-                    messages=current_messages,
+                    messages=cast(List[Dict[str, Any]], current_messages),
                     tools=tools,
                     **llm_kwargs_filtered,
                 )
@@ -742,14 +757,14 @@ async def execute_llm(
                     except Exception:
                         pass
                 else:
-                    yield response, current_messages.copy()
+                    yield response, cast(MessageList, current_messages.copy())
             
             # 发射迭代中的 LLM 调用结束事件
             iteration_llm_execution_time = time.time() - iteration_llm_start_time
             if enable_event:
                 try:
                     usage_info = extract_usage_from_response(last_response)
-                    tool_calls_typed: List[ToolCall] = [dict_to_tool_call(tc) for tc in tool_calls] if tool_calls else []
+                    tool_calls_typed_iteration: List[ToolCall] = [dict_to_tool_call(tc) for tc in tool_calls] if tool_calls else []
                     yield EventYield(
                         event=LLMCallEndEvent(
                             event_type=ReActEventType.LLM_CALL_END,
@@ -759,7 +774,7 @@ async def execute_llm(
                             iteration=iteration,
                             response=last_response,
                             messages=current_messages.copy(),
-                            tool_calls=tool_calls_typed,
+                            tool_calls=tool_calls_typed_iteration,
                             usage=usage_info,
                             execution_time=iteration_llm_execution_time,
                         )
@@ -769,22 +784,29 @@ async def execute_llm(
 
             # 更新迭代生成观测数据
             usage_info = extract_usage_from_response(last_response)
+            usage_dict_iteration: Optional[Dict[str, int]] = None
+            if usage_info:
+                usage_dict_iteration = {
+                    "prompt_tokens": usage_info.prompt_tokens,
+                    "completion_tokens": usage_info.completion_tokens,
+                    "total_tokens": usage_info.total_tokens,
+                }
             iteration_generation_span.update(
                 output={"content": content, "tool_calls": tool_calls},
-                usage_details=usage_info,
+                usage_details=usage_dict_iteration,
             )
 
         # Append new assistant response to message history
         if content.strip() != "":
             assistant_message = build_assistant_response_message(content)
-            current_messages.append(assistant_message)
+            current_messages.append(cast(Any, assistant_message))
 
         if len(tool_calls) != 0:
             assistant_tool_call_message = build_assistant_tool_message(
                 tool_calls,
                 reasoning_details if reasoning_details else None
             )
-            current_messages.append(assistant_tool_call_message)
+            current_messages.append(cast(Any, assistant_tool_call_message))
 
         if len(tool_calls) == 0:
             # No more tool calls, exit loop
@@ -854,10 +876,10 @@ async def execute_llm(
         
         # 使用支持事件的工具调用处理函数
         if enable_event:
-            event_queue: List[EventYield] = []
+            event_queue_iteration: List[EventYield] = []
             
             def event_callback(event: EventYield) -> None:
-                event_queue.append(event)
+                event_queue_iteration.append(event)
             
             current_messages = await _process_tool_calls_with_events(
                 tool_calls=tool_calls,
@@ -871,14 +893,15 @@ async def execute_llm(
             )
             
             # 发射所有收集的事件
-            for event in event_queue:
+            for event in event_queue_iteration:
                 yield event
         else:
-            current_messages = await process_tool_calls(
+            result_messages = await process_tool_calls(
                 tool_calls=tool_calls,
-                messages=current_messages,
+                messages=cast(List[Dict[str, Any]], current_messages),
                 tool_map=tool_map,
             )
+            current_messages = cast(MessageList, result_messages)
         
         # 发射迭代结束事件
         iteration_time = time.time() - iteration_llm_start_time
@@ -948,7 +971,7 @@ async def execute_llm(
         llm_kwargs_final.pop('tool_choice', None)
         
         final_response = await llm_interface.chat(
-            messages=current_messages,
+            messages=cast(List[Dict[str, Any]], current_messages),
             **llm_kwargs_final,
         )
 
@@ -978,9 +1001,16 @@ async def execute_llm(
                 pass
 
         # 更新最终观测数据
+        usage_dict_final: Optional[Dict[str, int]] = None
+        if usage_info:
+            usage_dict_final = {
+                "prompt_tokens": usage_info.prompt_tokens,
+                "completion_tokens": usage_info.completion_tokens,
+                "total_tokens": usage_info.total_tokens,
+            }
         final_generation_span.update(
             output={"content": final_content, "tool_calls": []},
-            usage_details=usage_info,
+            usage_details=usage_dict_final,
         )
 
         # 发射响应
@@ -994,7 +1024,7 @@ async def execute_llm(
             except Exception:
                 pass
         else:
-            yield final_response, current_messages.copy()
+            yield final_response, cast(MessageList, current_messages.copy())
 
         # 发射 ReAct 结束事件
         total_execution_time = time.time() - start_time

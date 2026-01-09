@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from SimpleLLMFunc.base.ReAct import execute_llm
 from SimpleLLMFunc.interface.llm_interface import LLM_Interface
@@ -55,7 +55,8 @@ async def execute_llm_call(
             yield output
         else:
             # 向后兼容模式：yield (response, messages) 元组
-            response, updated_messages = output
+            # 类型断言：当 enable_event=False 时，output 一定是 Tuple[Any, MessageList]
+            response, updated_messages = cast(Tuple[Any, MessageList], output)
             yield response, updated_messages
 
 

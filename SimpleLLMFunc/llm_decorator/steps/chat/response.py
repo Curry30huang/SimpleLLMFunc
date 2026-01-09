@@ -11,7 +11,7 @@ from SimpleLLMFunc.base.post_process import (
 )
 from SimpleLLMFunc.logger import app_log
 from SimpleLLMFunc.logger.logger import get_location
-from SimpleLLMFunc.type import HistoryList
+from SimpleLLMFunc.type import HistoryList, MessageList
 
 
 def extract_stream_response_content(chunk: Any, func_name: str) -> str:
@@ -37,12 +37,12 @@ def process_single_chat_response(
 
 
 async def process_chat_response_stream(
-    response_stream: AsyncGenerator[Tuple[Any, List[Dict[str, Any]]], None],
+    response_stream: AsyncGenerator[Tuple[Any, MessageList], None],
     return_mode: Literal["text", "raw"],
-    messages: List[Dict[str, Any]],  # 初始消息，用于兼容性
+    messages: MessageList,  # 初始消息，用于兼容性
     func_name: str,
     stream: bool,
-) -> AsyncGenerator[Tuple[Any, HistoryList], None]:
+) -> AsyncGenerator[Tuple[Any, MessageList], None]:
     """处理流式响应的完整流程"""
     current_messages = messages.copy()  # 初始消息
     

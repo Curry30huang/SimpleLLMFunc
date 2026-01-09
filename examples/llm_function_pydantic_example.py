@@ -20,8 +20,9 @@ try:
         provider_json_path
     )["openrouter"]["google/gemini-3-flash-preview"]
 except Exception:
-    llm_interface = None
+    llm_interface = None # type: ignore
 
+assert llm_interface is not None
 
 # 定义复杂的 Pydantic 模型
 class Address(BaseModel):
@@ -69,9 +70,9 @@ class SearchResult(BaseModel):
 
 # 定义返回复杂 Pydantic 模型的 llm_function
 @llm_function(llm_interface=llm_interface)
-async def search_companies(query: str, max_results: int = 3) -> SearchResult:
+async def search_companies(query: str, max_results: int = 3) -> SearchResult: # type: ignore
     """搜索符合条件的公司信息"""
-    pass
+    pass 
 
 
 async def main():

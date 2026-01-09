@@ -68,7 +68,7 @@ async def main():
     async for output in analyze_movie_review(review_text=review):
         if is_response_yield(output):
             # output.response 现在是解析后的 Pydantic 对象
-            result: MovieReview = output.response
+            result: MovieReview = output.response   # type: ignore
             print(f"\n分析结果（Pydantic 对象）：")
             print(f"  电影标题: {result.title}")
             print(f"  评分: {result.rating}")

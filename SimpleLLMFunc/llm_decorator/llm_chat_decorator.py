@@ -26,12 +26,10 @@ from SimpleLLMFunc.llm_decorator.steps.chat import (
     process_chat_response_stream,
 )
 from SimpleLLMFunc.interface.llm_interface import LLM_Interface
-from SimpleLLMFunc.logger import push_debug
-from SimpleLLMFunc.logger.logger import get_location
 from SimpleLLMFunc.tool import Tool
-from SimpleLLMFunc.type import HistoryList
+from SimpleLLMFunc.type import HistoryList, MessageList
+from SimpleLLMFunc.hooks.stream import ReactOutput
 from SimpleLLMFunc.observability.langfuse_client import langfuse_client
-from SimpleLLMFunc.hooks.stream import ReactOutput, ResponseYield, is_response_yield, responses_only
 
 # Type aliases
 ToolkitList = List[Union[Tool, Callable[..., Awaitable[Any]]]]  # List of Tool objects or async functions
@@ -197,8 +195,13 @@ def llm_chat(
                                 yield output
                         else:
                             # 向后兼容模式：处理响应流
+                            # 类型断言：当 enable_event=False 时，response_stream 只包含 Tuple[Any, MessageList]
+                            typed_response_stream = cast(
+                                AsyncGenerator[Tuple[Any, MessageList], None],
+                                response_stream,
+                            )
                             async for content, history in process_chat_response_stream(
-                                response_stream=response_stream,
+                                response_stream=typed_response_stream,
                                 return_mode=return_mode,
                                 messages=messages,
                                 func_name=function_signature.func_name,

@@ -336,12 +336,17 @@ async def chatbot_with_event_ui(
         toolkit=[calculate, get_weather, search_knowledge],
         stream=True,
         enable_event=True,  # 🔑 启用事件流
+        temperature=1.0
     )
     async def chat(
         user_message: str,
         chat_history: Optional[List[Dict[str, str]]] = None,
     ):
-        """智能助手，可以进行计算、查询天气和搜索知识库。"""
+        """你是一个知识渊博的助手，可以进行计算、查询天气和搜索知识库。
+
+        你的回答要符合以下要求：
+        - 带有语气词喵 
+        """
         pass
     
     # 开始处理事件流

@@ -25,6 +25,7 @@ from SimpleLLMFunc.llm_decorator.steps.chat import (
     execute_react_loop_streaming,
     process_chat_response_stream,
 )
+from SimpleLLMFunc.llm_decorator.steps.chat.message import HISTORY_PARAM_NAMES
 from SimpleLLMFunc.interface.llm_interface import LLM_Interface
 from SimpleLLMFunc.tool import Tool
 from SimpleLLMFunc.type import HistoryList, MessageList
@@ -39,10 +40,6 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 # Constants
-HISTORY_PARAM_NAMES: List[str] = [
-    "history",
-    "chat_history",
-]  # Valid parameter names for conversation history
 DEFAULT_MAX_TOOL_CALLS: int = (
     5  # Default maximum number of tool calls to prevent infinite loops
 )
@@ -135,7 +132,7 @@ def llm_chat(
         async def wrapper(*args, **kwargs):
             # Step 1: 解析函数签名
             function_signature, _ = parse_function_signature(func, args, kwargs)
-            
+
             # 构建用户任务提示（用于事件）
             user_task_prompt = json.dumps(
                 function_signature.bound_args.arguments,
@@ -188,7 +185,7 @@ def llm_chat(
 
                         collected_responses = []
                         final_history = None
-                        
+
                         if enable_event:
                             # 事件模式：直接 yield ReactOutput
                             async for output in response_stream:
